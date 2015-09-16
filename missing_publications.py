@@ -1,5 +1,9 @@
 #!/usr/bin/python
-import urilib
+
+import sys
+sys.path.append("/Users/pallavik/Library/Enthought/Canopy_64bit/User/lib/python2.7/site-packages")
+import requests
+
 def getUserInput() :
 
 	# get user input like ios branch name
@@ -11,7 +15,7 @@ def getUserInput() :
 
 	return branch,compNames
 
-def getExportDelta(ctsExportUrl) :
+#def getExportDelta(ctsExportUrl) :
 	# Get the XML Output from CTS Rest API's
 
 	# Parse the xml
@@ -21,14 +25,16 @@ def getExportDelta(ctsExportUrl) :
 	# Get latest version on component
 
 	# Get version delta
+#	print "In function get Export Delta function"
 
 
 # main function 
-(branch, compNames) = getUserInput()
+(branch,compNames) = getUserInput()
 
 # print branch
 # print compNames
 
-ctsExportUrl = "http://cts.cisco.com/cts/rest/exports?me.target_branch=%s&publish_contents.component=%s " %(branch, compNames)
+ctsExportUrl = "http://cts.cisco.com/cts/rest/exports?me.target_branch=%s&publish_contents.component=%s" %(branch, compNames)
+urlOutput = requests.get(ctsExportUrl, auth=('pallavik', '!ma82Ge$'))
 
-print ctsExportUrl
+print urlOutput.text
