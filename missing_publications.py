@@ -12,7 +12,7 @@ def getUserInput() :
 	
 	# get component names for which user wants to see the version delta
 	compNames = raw_input("Enter the component names seperated by , for which you wish to see the version delta : ")
-	print compNames.replace(" ", "")
+	compNames = compNames.replace(" ", "")
 
 	return branch,compNames
 
@@ -23,16 +23,36 @@ def getExportDelta(branch, compNames) :
 	urlOutput = requests.get(ctsExportUrl, auth=('pallavik', '!ma82Ge$'))
 	
 	# put a try block
-	FH = open("urlout.txt", "w+")
-	FH.write(urlOutput.text)
-	FH.close()
-	
-	# open the xml output file and parse it
-	FH = open("urlout.txt", "r")
-	# Parse the xml
-	xmlObj = xmltodict.parse(FH)
-	FH.close()
+	try :
+		FH = open("urlout.txt", "w+")
+		FH.write(urlOutput.text)
+		FH.close()
+	except :
+		print "Could not fetch from cts rest api, please check"
+		exit(0)
 
+	# open the xml output file and parse it
+	try :
+		FH = open("urlout.txt", "r")
+		# Parse the xml
+		xmlObj = xmltodict.parse(FH)
+		FH.close()
+	except :
+		print "Could not parse the XML output produced by CTS, please check"
+		exit(0)
+
+	print "Component	Published-Version	Latest-Version	VersionDelta"
+	try :
+		for idx in xmlObj.get('ExportsReport').get('Component') :
+			comp = idx['@name']
+			pubVersion = idx['TargetBranch']['Version']['@name']
+			latestVersion = idx['TargetBranch']['Version']['LatestVersion']
+			versionDelta  = idx['TargetBranch']['Version']['VersionDelta']
+			print comp , "\t", pubVersion,"\t", latestVersion,"\t", versionDelta
+	except :
+		print "Oopsie daisies :D"
+		print "Missing publication script has a bug, it cannot work for single component !"
+		print "Please give more components to work with :)"
 	# Get published version on the ios branch
 
 	# Get latest version on component
@@ -44,8 +64,6 @@ def getExportDelta(branch, compNames) :
 # main function 
 (branch,compNames) = getUserInput()
 
-# print branch
-# print compNames
 getExportDelta(branch, compNames)
 
 
