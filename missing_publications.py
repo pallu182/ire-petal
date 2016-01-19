@@ -4,6 +4,7 @@ import sys
 sys.path.append("/Users/pallavik/Library/Enthought/Canopy_64bit/User/lib/python2.7/site-packages")
 import requests
 import xmltodict
+import string
 
 def getUserInput() :
 
@@ -43,16 +44,22 @@ def getExportDelta(branch, compNames) :
 
 	print "Component	Published-Version	Latest-Version	VersionDelta"
 	try :
-		for idx in xmlObj.get('ExportsReport').get('Component') :
-			comp = idx['@name']
-			pubVersion = idx['TargetBranch']['Version']['@name']
-			latestVersion = idx['TargetBranch']['Version']['LatestVersion']
-			versionDelta  = idx['TargetBranch']['Version']['VersionDelta']
-			print comp , "\t", pubVersion,"\t", latestVersion,"\t", versionDelta
+		# for some reason for single component xmltodict processing fails, hence we are doing seperate stuff
+		l1 = compNames.split(",")
+
+		if len(l1) > 1:
+			for idx in xmlObj.get('ExportsReport').get('Component') :
+				parseCompDetails(idx)	
+				(comp, pubVersion, latestVersion, versionDelta, publishDate) = parseCompDetails(idx)
+				print comp , "\t\t", pubVersion,"\t", latestVersion,"\t", versionDelta, "\t", publishDate
+				
+		else :
+			id = xmlObj.get('ExportsReport').get('Component')
+			(comp, pubVersion, latestVersion, versionDelta, publishDate) = parseCompDetails(id)
+			print comp , "\t\t", pubVersion,"\t", latestVersion,"\t", versionDelta, "\t", publishDate
 	except :
-		print "Oopsie daisies :D"
-		print "Missing publication script has a bug, it cannot work for single component !"
-		print "Please give more components to work with :)"
+		print "Oopsie daisies !! Something went wrong in parsing the cts xml output. Please check !"
+
 	# Get published version on the ios branch
 
 	# Get latest version on component
@@ -60,6 +67,15 @@ def getExportDelta(branch, compNames) :
 	# Get version delta
 #	print "In function get Export Delta function"
 
+
+def parseCompDetails(id) :
+	comp          = id['@name']
+	pubVersion    = id['TargetBranch']['Version']['@name']
+	latestVersion = id['TargetBranch']['Version']['LatestVersion']
+	versionDelta  = id['TargetBranch']['Version']['VersionDelta']
+	publishDate   = id['TargetBranch']['Version']['PublishDate']
+
+	return (comp, pubVersion, latestVersion, versionDelta, publishDate)
 
 # main function 
 (branch,compNames) = getUserInput()
