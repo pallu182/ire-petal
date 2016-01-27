@@ -5,6 +5,8 @@ sys.path.append("/Users/pallavik/Library/Enthought/Canopy_64bit/User/lib/python2
 import requests
 import xmltodict
 import string
+import re
+import tabulate
 
 def getUserInput() :
 
@@ -23,7 +25,7 @@ def getExportDelta(branch, compNames) :
 	ctsExportUrl = "http://cts.cisco.com/cts/rest/exports?me.target_branch=%s&publish_contents.component=%s" %(branch, compNames)
 	urlOutput = requests.get(ctsExportUrl, auth=('pallavik', '!ma82Ge$'))
 	
-	# put a try block
+	# try block to open cts xml output
 	try :
 		FH = open("urlout.txt", "w+")
 		FH.write(urlOutput.text)
@@ -43,29 +45,27 @@ def getExportDelta(branch, compNames) :
 		exit(0)
 
 	print "Component	Published-Version	Latest-Version	VersionDelta"
-	try :
-		# for some reason for single component xmltodict processing fails, hence we are doing seperate stuff
-		l1 = compNames.split(",")
+	# for some reason for single component xmltodict processing fails, hence we are doing seperate stuff
+	l1 = compNames.split(",")
 
-		if len(l1) > 1:
-			for idx in xmlObj.get('ExportsReport').get('Component') :
-				parseCompDetails(idx)	
-				(comp, pubVersion, latestVersion, versionDelta, publishDate) = parseCompDetails(idx)
-				print comp , "\t\t", pubVersion,"\t", latestVersion,"\t", versionDelta, "\t", publishDate
-				
-		else :
-			id = xmlObj.get('ExportsReport').get('Component')
-			(comp, pubVersion, latestVersion, versionDelta, publishDate) = parseCompDetails(id)
+	if len(l1) > 1:
+		for idx in xmlObj.get('ExportsReport').get('Component') :
+			(comp, pubVersion, latestVersion, versionDelta, publishDate) = parseCompDetails(idx)
 			print comp , "\t\t", pubVersion,"\t", latestVersion,"\t", versionDelta, "\t", publishDate
-	except :
-		print "Oopsie daisies !! Something went wrong in parsing the cts xml output. Please check !"
+			if int(versionDelta) > 0 :
+				getVersionDelta(comp, pubVersion, publishDate, branch)
 
-	# Get published version on the ios branch
 
-	# Get latest version on component
+				
+	else :
+		id = xmlObj.get('ExportsReport').get('Component')
+		(comp, pubVersion, latestVersion, versionDelta, publishDate) = parseCompDetails(id)
+		print comp , "\t\t", pubVersion,"\t", latestVersion,"\t", versionDelta, "\t", publishDate
+		if int(versionDelta) > 0 :
+			getVersionDelta(comp, pubVersion, publishDate, branch)
+
 
 	# Get version delta
-#	print "In function get Export Delta function"
 
 
 def parseCompDetails(id) :
@@ -76,7 +76,65 @@ def parseCompDetails(id) :
 	publishDate   = id['TargetBranch']['Version']['PublishDate']
 
 	return (comp, pubVersion, latestVersion, versionDelta, publishDate)
+def getVersionDelta(comp, pubVersion, publishDate, branch) :
 
+	compBranch = getCompBranchName(comp,pubVersion)
+	
+	pubDate = publishDate.split(" ")
+
+	ctsUrl = "http://cts.cisco.com/cts/rest/version?component=%s&comp_branch=%s&date_start=%s" %(comp, compBranch, pubDate[0])
+	urlOutput = requests.get(ctsUrl, auth=('pallavik', '!ma82Ge$'))
+	
+	# try block to open cts xml output
+	try :
+		FH = open("compurlout.txt", "w+")
+		FH.write(urlOutput.text)
+		FH.close()
+	except :
+		print "Could not fetch from cts rest api, please check"
+		exit(0)
+
+    # open the xml output file and parse it
+	try :
+		FH = open("compurlout.txt", "r")
+	# Parse the xml
+		xmlObj = xmltodict.parse(FH)
+		FH.close()
+	except :
+		print "Could not parse the XML output produced by CTS, please check"
+		exit(0)
+
+	# Print the XML details in tabular format 
+	try :
+		for idx in xmlObj.get('VersionReport').get('Component').get('Branch').get('Version') :
+			(bugId, committedBy, commitDate, bugExportInfo, version) = parseExportDetails(idx)        
+			print bugId, committedBy, commitDate, bugExportInfo, version
+	except : 
+		id = xmlObj.get('VersionReport').get('Component').get('Branch').get('Version')
+		(bugId, committedBy, commitDate, bugExportInfo, version) = parseExportDetails(id)
+		print bugId, committedBy, commitDate, bugExportInfo, version
+
+
+def parseExportDetails(id) :
+	version = id['@name']
+	bugId  = id['Bugid']
+	committedBy = id['Committed_by']
+	bugExportInfo = id['Bugid_export_info']
+	commitDate = id['Commit_Date']
+	print bugId, committedBy, commitDate, bugExportInfo, version
+	return(bugId, committedBy, commitDate, bugExportInfo, version)
+
+def getCompBranchName(comp,pubVersion) :
+
+	#print pubVersion
+	p = re.compile("\((\w+)\)")
+	ver = p.findall(pubVersion)
+
+	#print comp, ver[0]
+	compBranch = "comp_%s_%s" %(comp,ver[0])
+	#print compBranch
+	return compBranch
+	
 # main function 
 (branch,compNames) = getUserInput()
 
