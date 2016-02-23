@@ -1,11 +1,13 @@
-#!/usr/bin/python
+#!/auto/sw/packages/python/2.7.9/bin/python
 
 import sys
-sys.path.append("/Users/pallavik/Library/Enthought/Canopy_64bit/User/lib/python2.7/site-packages")
+sys.path.append("/auto/sw/packages/python/2.7.9/lib/python2.7/site-packages")
 import requests
+sys.path.append("/ws/pallavik-sjc/pip-install-dir/xmltodict")
 import xmltodict
 import string
 import re
+sys.path.append("/ws/pallavik-sjc/pip-install-dir/tabulate")
 import tabulate
 import getpass
 
