@@ -7,6 +7,7 @@ import xmltodict
 import string
 import re
 import tabulate
+import getpass
 
 def getUserInput() :
 
@@ -19,11 +20,11 @@ def getUserInput() :
 
 	return branch,compNames
 
-def getExportDelta(branch, compNames) :
-	# Get the XML Output from CTS Rest API's
+def getExportDelta(branch, compNames, userid, paswd) :
 
+	# Get the XML Output from CTS Rest API's
 	ctsExportUrl = "http://cts.cisco.com/cts/rest/exports?me.target_branch=%s&publish_contents.component=%s" %(branch, compNames)
-	urlOutput = requests.get(ctsExportUrl, auth=('pallavik', '!ma82Ge$'))
+	urlOutput = requests.get(ctsExportUrl, auth=(userid, paswd))
 	
 	# try block to open cts xml output
 	try :
@@ -54,8 +55,6 @@ def getExportDelta(branch, compNames) :
 			print comp , "\t\t", pubVersion,"\t", latestVersion,"\t", versionDelta, "\t", publishDate
 			if int(versionDelta) > 0 :
 				getVersionDelta(comp, pubVersion, publishDate, branch)
-
-
 				
 	else :
 		id = xmlObj.get('ExportsReport').get('Component')
@@ -63,7 +62,6 @@ def getExportDelta(branch, compNames) :
 		print comp , "\t\t", pubVersion,"\t", latestVersion,"\t", versionDelta, "\t", publishDate
 		if int(versionDelta) > 0 :
 			getVersionDelta(comp, pubVersion, publishDate, branch)
-
 
 	# Get version delta
 
@@ -83,7 +81,7 @@ def getVersionDelta(comp, pubVersion, publishDate, branch) :
 	pubDate = publishDate.split(" ")
 
 	ctsUrl = "http://cts.cisco.com/cts/rest/version?component=%s&comp_branch=%s&date_start=%s" %(comp, compBranch, pubDate[0])
-	urlOutput = requests.get(ctsUrl, auth=('pallavik', '!ma82Ge$'))
+	urlOutput = requests.get(ctsUrl, auth=(userid, paswd))
 	
 	# try block to open cts xml output
 	try :
@@ -138,6 +136,8 @@ def getCompBranchName(comp,pubVersion) :
 # main function 
 (branch,compNames) = getUserInput()
 
-getExportDelta(branch, compNames)
+userid 	  = raw_input("Please enter your cec user id : ")
+paswd     = getpass.getpass()
 
+getExportDelta(branch, compNames, userid, paswd)
 
