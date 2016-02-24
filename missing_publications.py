@@ -121,7 +121,7 @@ def parseExportDetails(id) :
 	committedBy = id['Committed_by']
 	bugExportInfo = id['Bugid_export_info']
 	commitDate = id['Commit_Date']
-	print bugId, committedBy, commitDate, bugExportInfo, version
+#	print bugId, committedBy, commitDate, bugExportInfo, version
 	return(bugId, committedBy, commitDate, bugExportInfo, version)
 
 def getCompBranchName(comp,pubVersion) :
